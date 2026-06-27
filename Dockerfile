@@ -22,6 +22,7 @@ ENV TURSO_AUTH_TOKEN=$TURSO_AUTH_TOKEN
 ENV JWT_SECRET=$JWT_SECRET
 
 RUN npx prisma generate
+RUN npm install @prisma/adapter-libsql @libsql/client --no-save
 RUN npm run build
 
 # --- Runner ---
