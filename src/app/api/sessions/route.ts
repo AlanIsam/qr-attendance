@@ -24,18 +24,17 @@ export async function GET(request: Request) {
     orderBy: { startedAt: "desc" },
   })
 
-  return NextResponse.json(
-    sessions.map((s) => ({
+  return NextResponse.json({
+    sessions: sessions.map((s) => ({
       id: s.id,
       classId: s.classId,
-      className: s.class.name,
-      classCode: s.class.code,
+      class: { name: s.class.name, code: s.class.code },
       startedAt: s.startedAt,
       endedAt: s.endedAt,
       lateThreshold: s.lateThreshold,
       checkInCount: s._count.records,
-    }))
-  )
+    })),
+  })
 }
 
 export async function POST(request: Request) {

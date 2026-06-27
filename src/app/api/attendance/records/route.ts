@@ -65,19 +65,23 @@ export async function GET(request: Request) {
     orderBy: { checkedAt: "desc" },
   })
 
-  return NextResponse.json(
-    records.map((r) => ({
+  return NextResponse.json({
+    records: records.map((r) => ({
       id: r.id,
-      userId: r.user.id,
-      userName: r.user.name,
-      studentId: r.user.studentId,
-      email: r.user.email,
-      sessionId: r.session.id,
-      sessionStartedAt: r.session.startedAt,
-      classId: r.session.class.id,
-      className: r.session.class.name,
       status: r.status,
       checkedAt: r.checkedAt,
-    }))
-  )
+      user: {
+        id: r.user.id,
+        name: r.user.name,
+        studentId: r.user.studentId,
+        email: r.user.email,
+      },
+      session: {
+        startedAt: r.session.startedAt,
+        class: {
+          name: r.session.class.name,
+        },
+      },
+    })),
+  })
 }

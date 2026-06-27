@@ -21,8 +21,8 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
   })
 
-  return NextResponse.json(
-    classes.map((c) => ({
+  return NextResponse.json({
+    classes: classes.map((c) => ({
       id: c.id,
       name: c.name,
       code: c.code,
@@ -31,8 +31,8 @@ export async function GET(request: Request) {
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
       enrollmentCount: c._count.enrollments,
-    }))
-  )
+    })),
+  })
 }
 
 export async function POST(request: Request) {

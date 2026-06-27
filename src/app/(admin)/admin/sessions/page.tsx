@@ -26,8 +26,7 @@ import { toast } from "sonner";
 interface SessionItem {
   id: string;
   classId: string;
-  className: string;
-  classCode: string;
+  class: { name: string; code: string };
   startedAt: string;
   endedAt: string | null;
   lateThreshold: number;
@@ -44,7 +43,7 @@ export default function SessionsPage() {
         const res = await fetch("/api/sessions");
         if (res.ok) {
           const data = await res.json();
-          setSessions(data);
+          setSessions(data.sessions || data);
         } else {
           toast.error("Failed to load sessions");
         }
@@ -104,7 +103,7 @@ export default function SessionsPage() {
                 {sessions.map((session) => (
                   <TableRow key={session.id}>
                     <TableCell className="font-medium">
-                      {session.className}
+                      {session.class.name}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDateTime(new Date(session.startedAt))}

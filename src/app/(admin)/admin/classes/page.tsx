@@ -72,7 +72,7 @@ export default function ClassesPage() {
       const res = await fetch("/api/classes");
       if (res.ok) {
         const data = await res.json();
-        setClasses(data);
+        setClasses(data.classes || data);
       } else {
         toast.error("Failed to load classes");
       }

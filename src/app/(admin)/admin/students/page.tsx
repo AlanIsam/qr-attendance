@@ -36,7 +36,6 @@ interface Student {
   email: string;
   studentId: string | null;
   createdAt: string;
-  _count?: { enrollments: number };
 }
 
 interface PendingEnrollment {
@@ -59,45 +58,15 @@ export default function StudentsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/classes").then((r) => r.json()),
+      fetch("/api/admin/users?role=student").then((r) => r.json()),
       fetch("/api/enrollments/pending").then((r) => r.json()).catch(() => ({ enrollments: [] })),
       fetch("/api/sessions").then((r) => r.json()),
-    ]).then(([classesData, pendingData, sessionsData]) => {
-      const allStudents: Student[] = [];
-      const seen = new Set<string>();
-      if (classesData.classes) {
-        for (const cls of classesData.classes) {
-          if (cls.enrollments) {
-            for (const enrollment of cls.enrollments) {
-              if (enrollment.user && !seen.has(enrollment.user.id)) {
-                seen.add(enrollment.user.id);
-                allStudents.push(enrollment.user);
-              }
-            }
-          }
-        }
-      }
-      setStudents(allStudents);
+    ]).then(([studentsData, pendingData, sessionsData]) => {
+      setStudents(studentsData.users || []);
       setPending(pendingData.enrollments || []);
       setSessions((sessionsData.sessions || []).filter((s: { endedAt: string | null }) => !s.endedAt));
       setLoading(false);
     });
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/attendance/records")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.records) {
-          const studentMap = new Map<string, Student>();
-          for (const record of data.records) {
-            if (record.user && !studentMap.has(record.user.id)) {
-              studentMap.set(record.user.id, record.user);
-            }
-          }
-        }
-      })
-      .catch(() => {});
   }, []);
 
   async function handleEnrollmentAction(id: string, status: "approved" | "rejected") {

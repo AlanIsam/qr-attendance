@@ -33,7 +33,7 @@ interface ClassItem {
 interface SessionItem {
   id: string;
   classId: string;
-  className: string;
+  class: { name: string };
   startedAt: string;
   endedAt: string | null;
   checkInCount: number;
@@ -67,24 +67,27 @@ export default function DashboardPage() {
         ]);
 
         if (classesRes.ok) {
-          const classes: ClassItem[] = await classesRes.json();
+          const data = await classesRes.json();
+          const classes: ClassItem[] = data.classes || data;
           setTotalClasses(classes.length);
           const studentCount = classes.reduce(
-            (sum, c) => sum + c.enrollmentCount,
+            (sum, c) => sum + (c.enrollmentCount || 0),
             0
           );
           setTotalStudents(studentCount);
         }
 
         if (sessionsRes.ok) {
-          const sessions: SessionItem[] = await sessionsRes.json();
+          const data = await sessionsRes.json();
+          const sessions: SessionItem[] = data.sessions || data;
           const active = sessions.filter((s) => s.endedAt === null);
           setActiveSessions(active.length);
           setRecentSessions(sessions.slice(0, 5));
         }
 
         if (recordsRes.ok) {
-          const records: AttendanceRecord[] = await recordsRes.json();
+          const data = await recordsRes.json();
+          const records: AttendanceRecord[] = data.records || data;
           setTodayCheckIns(records.length);
         }
       } catch {
@@ -184,7 +187,7 @@ export default function DashboardPage() {
                 <CardContent className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="font-medium">{session.className}</p>
+                      <p className="font-medium">{session.class?.name}</p>
                       <p className="text-sm text-muted-foreground">
                         {formatDateTime(new Date(session.startedAt))}
                       </p>
