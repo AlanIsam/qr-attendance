@@ -9,6 +9,7 @@ const publicPaths = [
   "/api/auth/register",
   "/_next",
   "/manifest.json",
+  "/manifest.webmanifest",
   "/sw.js",
   "/favicon.ico",
   "/offline.html",
@@ -54,5 +55,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|icon-.*).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|icon-.*|sw\\.js|manifest\\.webmanifest).*)"],
 }
