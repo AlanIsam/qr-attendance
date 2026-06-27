@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  studentId    String?  @unique
+  passwordHash String
+  role         String   @default("student")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  enrollments       Enrollment[]
+  attendanceRecords AttendanceRecord[]
+  sessions          AttendanceSession[]
+
+  @@index([role])
+}
+
+model Class {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  schedule    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  enrollments Enrollment[]
+  sessions    AttendanceSession[]
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  classId   String
+  status    String   @default("approved")
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, classId])
+  @@index([classId])
+  @@index([userId])
+}
+
+model AttendanceSession {
+  id             String    @id @default(cuid())
+  classId        String
+  createdById    String
+  currentToken   String?
+  tokenExpiresAt DateTime?
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  lateThreshold  Int       @default(10)
+
+  class     Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdBy User               @relation(fields: [createdById], references: [id])
+  records   AttendanceRecord[]
+
+  @@index([classId])
+  @@index([createdById])
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  status    String   @default("present")
+  checkedAt DateTime @default(now())
+
+  session AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model Settings {
+  id                String @id @default("global")
+  lateThreshold     Int    @default(10)
+  qrRefreshInterval Int    @default(30)
+  sessionDuration   Int    @default(120)
+}

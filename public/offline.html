@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Attendance - Offline</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #09090b;
+      color: #fafafa;
+      padding: 1rem;
+    }
+    .container {
+      text-align: center;
+      max-width: 320px;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { color: #a1a1aa; font-size: 0.875rem; line-height: 1.5; }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.5rem 1.5rem;
+      border-radius: 0.5rem;
+      border: 1px solid #27272a;
+      background: transparent;
+      color: #fafafa;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    button:hover { background: #27272a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>You're Offline</h1>
+    <p>Please check your internet connection and try again. You need to be online to take attendance.</p>
+    <button onclick="location.reload()">Retry</button>
+  </div>
+</body>
+</html>
