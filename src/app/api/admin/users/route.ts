@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { getAuthUser, hashPassword } from "@/lib/auth"
+import { createAdminSchema, firstError } from "@/lib/validations"
 
 export async function GET(request: Request) {
   const user = await getAuthUser(request)
@@ -33,21 +34,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const { name, email, password } = await request.json()
-
-  if (!name || !email || !password) {
-    return NextResponse.json(
-      { error: "Name, email, and password are required" },
-      { status: 400 }
-    )
+  const parsed = createAdminSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: firstError(parsed) }, { status: 400 })
   }
-
-  if (password.length < 6) {
-    return NextResponse.json(
-      { error: "Password must be at least 6 characters" },
-      { status: 400 }
-    )
-  }
+  const { name, email, password } = parsed.data
 
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {

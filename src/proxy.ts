@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { verifyToken } from "@/lib/auth"
+import { verifyToken } from "@/lib/jwt"
 
 const publicPaths = [
   "/login",
   "/register",
   "/api/auth/login",
   "/api/auth/register",
+  "/api/auth/logout",
   "/_next",
   "/manifest.json",
   "/manifest.webmanifest",

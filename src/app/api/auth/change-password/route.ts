@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { getAuthUser, verifyPassword, hashPassword } from "@/lib/auth"
+import { changePasswordSchema, firstError } from "@/lib/validations"
 
 export async function POST(request: Request) {
   try {
@@ -13,14 +14,11 @@ export async function POST(request: Request) {
       )
     }
 
-    const { currentPassword, newPassword } = await request.json()
-
-    if (!currentPassword || !newPassword) {
-      return NextResponse.json(
-        { error: "Current password and new password are required" },
-        { status: 400 }
-      )
+    const parsed = changePasswordSchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstError(parsed) }, { status: 400 })
     }
+    const { currentPassword, newPassword } = parsed.data
 
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },

@@ -1,17 +1,30 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { hashPassword, signToken } from "@/lib/auth"
+import { hashPassword, signToken, authCookieOptions, AUTH_COOKIE_NAME } from "@/lib/auth"
+import { registerSchema, firstError } from "@/lib/validations"
+import { consumeRateLimit, getClientIp } from "@/lib/rate-limit"
+
+// Generous per-IP cap: lets a whole class register from shared WiFi while
+// still stopping scripted mass-registration abuse.
+const REGISTER_LIMIT = 50
+const REGISTER_WINDOW_MS = 10 * 60 * 1000
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password, studentId } = await request.json()
-
-    if (!name || !email || !password) {
+    const ip = getClientIp(request)
+    const rl = consumeRateLimit(`register:${ip}`, REGISTER_LIMIT, REGISTER_WINDOW_MS)
+    if (!rl.allowed) {
       return NextResponse.json(
-        { error: "Name, email, and password are required" },
-        { status: 400 }
+        { error: `Too many registrations. Try again in ${rl.retryAfter} seconds.` },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       )
     }
+
+    const parsed = registerSchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstError(parsed) }, { status: 400 })
+    }
+    const { name, email, password, studentId } = parsed.data
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
@@ -29,6 +42,7 @@ export async function POST(request: Request) {
         email,
         passwordHash,
         studentId: studentId || null,
+        // Role is always "student" — clients can never self-assign admin.
         role: "student",
       },
       select: {
@@ -44,14 +58,22 @@ export async function POST(request: Request) {
     const token = signToken({ userId: user.id, role: user.role })
 
     const response = NextResponse.json({ user, token }, { status: 201 })
-    response.cookies.set("auth-token", token, {
-      httpOnly: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    })
+    response.cookies.set(AUTH_COOKIE_NAME, token, authCookieOptions)
 
     return response
-  } catch {
+  } catch (err: unknown) {
+    // Unique-constraint race (e.g. duplicate studentId) → friendly message.
+    if (
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      err.code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "Email or student ID already in use" },
+        { status: 409 }
+      )
+    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

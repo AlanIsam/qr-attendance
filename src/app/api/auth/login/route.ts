@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { verifyPassword, signToken } from "@/lib/auth"
+import { verifyPassword, signToken, authCookieOptions, AUTH_COOKIE_NAME } from "@/lib/auth"
+import { loginSchema, firstError } from "@/lib/validations"
+import { consumeRateLimit, resetRateLimit } from "@/lib/rate-limit"
+
+// Allow up to 10 login attempts per email within 10 minutes.
+const LOGIN_LIMIT = 10
+const LOGIN_WINDOW_MS = 10 * 60 * 1000
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json()
+    const parsed = loginSchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstError(parsed) }, { status: 400 })
+    }
+    const { email, password } = parsed.data
 
-    if (!email || !password) {
+    // Per-email brute-force protection (does not penalize shared networks).
+    const rlKey = `login:${email}`
+    const rl = consumeRateLimit(rlKey, LOGIN_LIMIT, LOGIN_WINDOW_MS)
+    if (!rl.allowed) {
       return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
+        { error: `Too many login attempts. Try again in ${rl.retryAfter} seconds.` },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       )
     }
 
@@ -29,6 +42,9 @@ export async function POST(request: Request) {
       )
     }
 
+    // Successful login clears the attempt counter for this email.
+    resetRateLimit(rlKey)
+
     const token = signToken({ userId: user.id, role: user.role })
 
     const response = NextResponse.json({
@@ -42,11 +58,7 @@ export async function POST(request: Request) {
       },
       token,
     })
-    response.cookies.set("auth-token", token, {
-      httpOnly: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    })
+    response.cookies.set(AUTH_COOKIE_NAME, token, authCookieOptions)
 
     return response
   } catch {

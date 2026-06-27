@@ -1,8 +1,15 @@
 import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
 import { prisma } from "./db"
+import { verifyToken } from "./jwt"
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret"
+// Re-export the pure JWT/cookie helpers so existing imports from "@/lib/auth"
+// keep working. The DB-backed helpers live here; JWT primitives live in jwt.ts.
+export {
+  signToken,
+  verifyToken,
+  AUTH_COOKIE_NAME,
+  authCookieOptions,
+} from "./jwt"
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10)
@@ -10,18 +17,6 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash)
-}
-
-export function signToken(payload: { userId: string; role: string }): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" })
-}
-
-export function verifyToken(token: string): { userId: string; role: string } | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string; role: string }
-  } catch {
-    return null
-  }
 }
 
 export async function getAuthUser(request: Request) {

@@ -97,7 +97,7 @@ export default function ProfilePage() {
   }
 
   async function handleLogout() {
-    document.cookie = "auth-token=; path=/; max-age=0";
+    await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
   }
 
