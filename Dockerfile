@@ -40,6 +40,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy Turso/LibSQL packages that standalone mode may not trace
+COPY --from=builder /app/node_modules/@prisma/adapter-libsql ./node_modules/@prisma/adapter-libsql
+COPY --from=builder /app/node_modules/@libsql ./node_modules/@libsql
+COPY --from=builder /app/node_modules/libsql ./node_modules/libsql
+
+# Copy generated Prisma client
+COPY --from=builder /app/src/generated ./src/generated
+
 USER nextjs
 
 EXPOSE 8080
